@@ -126,6 +126,7 @@ type
     function GetTile(const Tile: TTile): TBitmap;
     // Adds memory stream `Ms`, PNG and bitmap produced from it to memory and file cache. @br
     // ! **TileStorage takes ownership on `Ms` so it must not be freed** !
+    // @raises Exception if `Ms` doesn't contain valid PNG data
     //   @param Tile - tile to store
     //   @param Ms - memory stream containing PNG image
     procedure StoreTile(const Tile: TTile; Ms: TMemoryStream);
@@ -341,15 +342,25 @@ end;
 procedure TTileStorage.StoreTile(const Tile: TTile; Ms: TMemoryStream);
 var png: TPngImage;
 begin
+  // First try to load stream to PNG image to check if it's correct
+  Ms.Position := 0;
+  png := TPngImage.Create;
+  try
+    png.LoadFromStream(Ms);
+  except on E: Exception do
+    begin
+      FreeAndNil(png);
+      raise E;
+    end;
+  end;
+
   // Save to disk as PNG
+  Ms.Position := 0;
   if ([tsoNoFileCache, tsoReadOnlyFileCache] * FOptions = []) then
     StoreInFileCache(Tile, Ms);
   // Store in stream cache
   FStmCache.Push(Tile, Ms, Ms.Size);
   // Store in PNG cache
-  Ms.Position := 0;
-  png := TPngImage.Create;
-  png.LoadFromStream(Ms);
   FPngCache.Push(Tile, png, Ms.Size);
   // Store in bitmap cache
   FBmpCache.Push(Tile, PNGtoBitmap(png), TILE_BITMAP_SIZE);
