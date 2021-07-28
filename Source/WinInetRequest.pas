@@ -40,7 +40,7 @@ begin
 
   try try
     // Init WinInet
-    hInet := InternetOpen('Foo', INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0);
+    hInet := InternetOpen('Foo', INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
     if hInet = nil then
       raise Exception.Create(SysErrorMessage(GetLastError));
     // Open address
